@@ -1,0 +1,17 @@
+{
+  "name": "iDNA",
+  "version": "0.0.1",
+  "authors": [
+    "jer0dh <jerod@jhtechservices.com>"
+  ],
+  "description": "javaScript implementation of simulating genetic material and the propagation",
+  "main": "index.html",
+  "keywords": [
+    "genetics",
+    "DNA",
+    "life"
+  ],
+  "devDependencies": {
+    "underscore": "~1.8.3"
+  }
+}

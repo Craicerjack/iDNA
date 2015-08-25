@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>iDNA</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="text/javascript" src="lib/vis/vis.js"></script>
+    <link href="lib/vis/vis.css" rel="stylesheet" type="text/css" />
+
+    <style type="text/css">
+        #mynetwork {
+            height: 500px;
+            border: 1px solid lightgray;
+
+        }
+        #zoom {
+            height: 500px;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+<h1>iDNA</h1>
+<div class="container" >
+    <div class="row worldConfig">
+        <div class="col-sm-12">
+            <input id="generations" name="generations" type="number">
+            <button id="start">Start</button>
+            <button id="stop">Stop</button>
+        </div>
+
+    </div>
+    <div class="row worldInfo">
+        <div class="col1 col-sm-6" style="border:1px solid #000; height: 150px;">
+            <p> pop: { tt.population }</p>
+            <p> dead: { tt.dead } </p>
+
+            <div>#ofOrgs:<p rv-each-gw="tt.growth" style="display: inline-block; padding-left: 3px;">{ gw.population },</p></div>
+            <div>ms/loop:<p rv-each-ms="tt.loopSpeed" style="display: inline-block; padding-left: 3px;">{ ms.ms },</p></div>
+        </div>
+        <div id="census" class="col-sm-3" style="border:1px solid #000; max-height: 150px;">
+        </div>
+        <div id="comp" class="col-sm-3" style="border:1px solid #000;max-height: 150px;">
+        </div>
+    </div>
+    <div class="row">
+        <div id="mynetwork" class="col-sm-6" style="border:1px solid #000;"></div>
+        <div id="zoom" class="col-sm-6" style="border:1px solid #000;"></div>
+    </div>
+    <div class="row genomeMapContainer">
+        <div class="network1 col-sm-6" style="border:1px solid #000;"></div>
+        <div class="network2 col-sm-6" style="border:1px solid #000;"></div>
+    </div>
+
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+<script src="lib/underscore/underscore-min.js"></script>
+<script src="lib/rivets/rivets.min.js"></script>
+<!--<script src="lib/handlebars/handlebars-v3.0.3.js"></script>-->
+<script src="life/gene.js"></script>
+<script src="life/chromosome.js"></script>
+<script src="life/chromosomePair.js"></script>
+<script src="life/organism.js"></script>
+<script src="life/registry.js"></script>
+<script src="life/helpers.js"></script>
+<script src="life/play3.js"></script>
+
+<script id="genomeMap-template" type="text/x-handlebars-template">
+    <div class="genomeMap">
+        <h2>{ tt.selectedNode1.name }</h2>
+        <p class="regId">regId: { tt.selectedNode1.regId }</p>
+        <p class="generation">generation: { tt.selectedNode1.generation }</p>
+        <p class="birthTime">birthTime: { tt.selectedNode1.birthTime }</p>
+        <p class="activeGenes">ActiveGenes: { tt.selectedNode1.activeGenes }</p>
+        <div class="row">
+            <div class="col-sm-6 chromo1">
+                <ul>
+
+                    <li rv-each-gene="tt.selectedNode1.chrom1" class="gene">
+                        <p>gene name: { gene.name }</p>
+                        <p>active: { gene.active }</p>
+                        <p>type: { gene.type }</p>
+                        <button>toggle gene code</button>
+                        <p class="code hidden">{ gene.code }</p>
+                        <p class="express hidden">{ gene.express }</p>
+                    </li>
+
+                </ul>
+            </div>
+            <div class="col-sm-6 chromo2">
+                <ul>
+
+                    <li rv-each-gene="tt.selectedNode1.chrom2" class="gene">
+                        <p>gene name: { gene.name }</p>
+                        <p>active: { gene.active }</p>
+                        <p>type: { gene.type }</p>
+                        <button>toggle gene code</button>
+                        <p class="code hidden">{ gene.code }</p>
+                        <p class="express hidden">{ gene.express }</p>
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/javascript">
+        // Used to control startWorld internal loop.  startWorld() will return this object with the reset and stop functions that have access
+        // to internal closure.
+        var controls;
+
+    jQuery(document).ready(function() {
+
+        //get template for selectedNode1 and add to container
+        var source = jQuery("#genomeMap-template").html();
+        jQuery('.genomeMapContainer .network1').html(source);
+
+        //alter template for selectedNode2 and add to container
+        var source2 = source.replace(/selectedNode1/g, "selectedNode2");
+        jQuery('.genomeMapContainer .network2').html(source2);
+
+        //hide until data is bound
+        jQuery('.genomeMapContainer').hide();
+        jQuery('.worldInfo').hide();
+        // Add event to toggle showing of code and express function when button for gene is pressed.
+        jQuery(".container").on("click",".gene button", function(e){
+            jQuery(this).parent().find('.code').toggleClass('hidden');
+            jQuery(this).parent().find('.express').toggleClass('hidden');
+        });
+
+        // Add event to startWorld
+        jQuery('#start').on('click', function() {
+            var gen = +jQuery('#generations').val();
+            console.log(gen);
+            if (typeof controls !== 'undefined' && controls.reset) {
+                controls.reset()
+            }
+            controls = startWorld(gen);
+        });
+        jQuery('#stop').on('click', function() {
+            if (typeof controls !== 'undefined' && controls.stop) {
+                controls.stop();
+            }
+        })
+
+
+    })
+</script>
+</body>
+</html>

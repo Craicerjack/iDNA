@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>iDNA</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="text/javascript" src="lib/vis/vis.js"></script>
+    <link href="lib/vis/vis.css" rel="stylesheet" type="text/css" />
+
+    <style type="text/css">
+        #mynetwork {
+            height: 500px;
+            border: 1px solid lightgray;
+
+        }
+        #zoom {
+            height: 500px;
+            border: 1px solid red;
+        }
+    </style>
+</head>
+<body>
+<h1>iDNA</h1>
+<div class="container" >
+    <div class="row worldInfo">
+        <div class="col1 col-sm-6" style="border:1px solid #000;">
+            <h3 rv-text="state.selectedNode1.name"></h3>
+        </div>
+        <div class="col2 col-sm-6" style="border:1px solid #000;">
+            <h3>{ state.selectedNode2.name }</h3>
+        </div>
+    </div>
+    <div class="row">
+        <div id="mynetwork" class="col-sm-6" style="border:1px solid #000;"></div>
+        <div id="zoom" class="col-sm-6" style="border:1px solid #000;"></div>
+    </div>
+    <div class="row genomeMap">
+        <div class="network1 col-sm-6" style="border:1px solid #000;"></div>
+        <div class="network2 col-sm-6" style="border:1px solid #000;"></div>
+    </div>
+
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.js"></script>
+<script src="bower_components/underscore/underscore-min.js"></script>
+<script src="lib/rivets/rivets.min.js"></script>
+<script src="lib/handlebars/handlebars-v3.0.3.js"></script>
+<script src="life/gene.js"></script>
+<script src="life/chromosome.js"></script>
+<script src="life/chromosomePair.js"></script>
+<script src="life/organism.js"></script>
+<script src="life/registry.js"></script>
+<script src="life/helpers.js"></script>
+<script src="life/play2.js"></script>
+<script type="text/javascript">
+
+
+    // create a network
+    var container = document.getElementById('mynetwork');
+
+    // provide the data in the vis format
+    var data = {
+        nodes: registry.nodes,
+        edges: registry.edges
+    };
+    var options = {
+        layout: {
+            randomSeed: undefined,
+            hierarchical: {
+                enabled: true,
+                levelSeparation: 120,
+                direction: 'LR', //UD, DU, LR, RL
+                sortMethod: 'directed' //hubsize, directed
+            }
+        },
+        interaction: {
+            navigationButtons: true,
+            keyboard: true
+        }
+
+    };
+
+    // initialize your network!
+    var network = new vis.Network(container, data, options);
+
+    //global objects bound to rivet
+    var state = {};
+    state.selectedNode1 = {};
+    state.selectedNode2 = {};
+    state.selectedNode1.name = "george";
+
+    state.selectedNode2.name = "jj";
+    var view;
+    rivets.bind(jQuery('.worldInfo'), {state: state});
+
+
+
+    network.on("doubleClick", function(params) {
+        console.log(params);
+        var family = registry.getAncestors(params.nodes[0]).concat([+params.nodes[0]]);  //id needs to be a number, not string
+        console.log(family);
+        var familyData = {
+            nodes: new vis.DataSet(data.nodes.get(family)),
+            edges: data.edges
+        }
+        jQuery('.network2').html('');
+        var tmpnetwork = new vis.Network(document.getElementById('zoom'),familyData, options);
+        tmpnetwork.on("doubleClick", function(params){
+            var descendants = registry.getDescendants(params.nodes[0]);
+            var newNodes = data.nodes.get(descendants);
+            _.each(newNodes, function(node) {
+                if(familyData.nodes.get(node.id) === null){
+                    familyData.nodes.add(node);
+                }
+            });
+
+
+        });
+        tmpnetwork.on("selectNode", function(params) {
+            var selectedNode1 = data.nodes.get(params.nodes[0]);
+            console.log(selectedNode1);
+           // view.unbind();
+            //view = rivets.bind(jQuery('.worldInfo'), {selectedNode1: hello, selectedNode2: goodbye});
+            var context = JSON.parse( selectedNode1.genome);
+            context.regId = selectedNode1.id;
+            state.selectedNode1 = selectedNode1;
+
+            jQuery(".genomeMap .network2").html(genomeMapTemplate(context));
+        });
+    });
+    network.on("selectNode", function(params) {
+        var selectedNode2 = data.nodes.get(params.nodes[0]);
+        var context = JSON.parse( selectedNode2.genome);
+        context.regId = selectedNode2.id;
+        var test = new iDNA.Gene('hh');
+
+        state.selectedNode2 = test;
+
+        jQuery(".genomeMap .network1").html(genomeMapTemplate(context));
+    });
+</script>
+<script id="genomeMap-template" type="text/x-handlebars-template">
+    <div class="genomeMap">
+        <h2>{{name}}</h2>
+        <p class="regId">regId: {{regId}}</p>
+        <p class="generation">generation: {{generation}}</p>
+        <p class="birthTime">birthTime: {{birthTime}}</p>
+        <p class="activeGenes">ActiveGenes: {{activeGenes}}</p>
+        <div class="row">
+            <div class="col-sm-6 chromo1">
+                <ul>
+                    {{#each chrom1}}
+                    <li class="gene">
+                        <p>gene name: {{name}}</p>
+                        <p>active: {{active}}</p>
+                        <p>type: {{type}}</p>
+                        <button>toggle gene code</button>
+                        <p class="code hidden">{{code}}</p>
+                        <p class="express hidden">{{express}}</p>
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+            <div class="col-sm-6 chromo2">
+                <ul>
+                    {{#each chrom2}}
+                    <li class="gene">
+                        <p>gene name: {{name}}</p>
+                        <p>active: {{active}}</p>
+                        <p>type: {{type}}</p>
+                        <button>toggle gene code</button>
+                        <p class="code hidden">{{code}}</p>
+                        <p class="express hidden">{{express}}</p>
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/javascript">
+    var source = jQuery("#genomeMap-template").html();
+    var genomeMapTemplate = Handlebars.compile(source);
+    jQuery(".genomeMap").on("click",".gene button", function(e){
+       jQuery(this).parent().find('.code').toggleClass('hidden');
+        jQuery(this).parent().find('.express').toggleClass('hidden');
+    });
+</script>
+</body>
+</html>
